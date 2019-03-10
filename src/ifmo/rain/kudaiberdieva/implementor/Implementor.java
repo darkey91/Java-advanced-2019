@@ -1,24 +1,35 @@
 package ifmo.rain.kudaiberdieva.implementor;
 
-import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
+import info.kgeorgiy.java.advanced.implementor.JarImpler;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
 
-public class Implementor extends ClassLoader implements Impler {
+
+/**
+ * Implementation class for {@link JarImpler} interface
+ */
+public class Implementor implements JarImpler {
     private final static String SUFFIX = "Impl";
     private final static String PACKAGE = "package";
-    private final static String JAVA_EXTENSION = ".java";
     private final static String SUPER = "super";
     private final static String TAB = "    ";
     private final static String DOUBLE_TAB = "        ";
@@ -52,11 +63,11 @@ public class Implementor extends ClassLoader implements Impler {
         return token.getSimpleName().concat(SUFFIX);
     }
 
-    private Path getFilePathName(Class<?> token, Path path) {
+    private Path getFilePathName(Class<?> token, Path path, String extension) {
         return path.resolve(token.getPackageName()
                 .replace('.', File.separatorChar))
                 .resolve(getClassName(token)
-                        .concat(JAVA_EXTENSION));
+                        .concat("." + extension));
     }
 
     private void createDirectories(Path path) throws ImplerException {
@@ -93,8 +104,25 @@ public class Implementor extends ClassLoader implements Impler {
         }
     }
 
+    private String getExceptionString(Executable executable) {
+        StringBuffer code = new StringBuffer();
+
+        Class<?>[] exceptions = executable.getExceptionTypes();
+
+        if (exceptions.length == 0)
+            return "";
+
+        code.append("throws ")
+                .append(Arrays.stream(exceptions)
+                        .map(e -> e.getCanonicalName())
+                        .collect(Collectors.joining(COMMA_SPACE)));
+
+        return code.toString();
+
+    }
+
     private String createExecutableCode(Executable executable, boolean isConstructor) {
-        int modifiers = executable.getModifiers() & ~Modifier.TRANSIENT & ~Modifier.ABSTRACT & ~Modifier.NATIVE;
+        int modifiers = executable.getModifiers() & ~Modifier.TRANSIENT & ~Modifier.ABSTRACT & ~Modifier.NATIVE ;
 
         StringBuffer code = new StringBuffer(TAB.concat(Modifier.toString(modifiers)));
 
@@ -110,6 +138,7 @@ public class Implementor extends ClassLoader implements Impler {
         }
 
         code.append(getMethodParametersString(executable.getParameterTypes()))
+                .append(getExceptionString(executable))
                 .append(HEADER)
                 .append(DOUBLE_TAB);
 
@@ -135,7 +164,6 @@ public class Implementor extends ClassLoader implements Impler {
 
     private class MethodSignatureComparator {
         private Method method;
-
         public MethodSignatureComparator(Method method) {
             this.method = method;
         }
@@ -160,38 +188,48 @@ public class Implementor extends ClassLoader implements Impler {
         }
     }
 
-    private void fillMethodSet(Class<?> clazz, Set<MethodSignatureComparator> methods) {
-        if (clazz == null) return;
-        fillMethodSet(clazz.getSuperclass(), methods);
-        Arrays.stream(clazz.getInterfaces()).forEach((i) -> fillMethodSet(i, methods));
-        methods.addAll(
-                Arrays.stream(clazz.getDeclaredMethods())
-                        .filter(m -> Modifier.isAbstract(m.getModifiers()) && !Modifier.isPrivate(m.getModifiers()))
-                        .map(MethodSignatureComparator::new).
-                        collect(Collectors.toSet())
-        );
+    private String generateConstructors(Class<?> token) throws ImplerException {
+        StringBuffer code = new StringBuffer();
+        Constructor[] constructors = Arrays.stream(token.getDeclaredConstructors())
+                .filter(c -> !Modifier.isPrivate(c.getModifiers()))
+                .toArray(Constructor[]::new);
+
+        if (constructors.length == 0)
+            throw new ImplerException(String.format("Class %s should have callable constructors", constructors.getClass().getName()));
+
+        for (Constructor c: constructors) {
+            code.append(createExecutableCode(c, true));
+        }
+        return code.toString();
     }
 
-    private String implementExecutables(Class<?> token) {
+    private String implementExecutables(Class<?> token) throws ImplerException  {
         StringBuffer code = new StringBuffer();
+
         if (!token.isInterface()) {
-            code.append(implementExecutables(token.getDeclaredConstructors(), true));
+            code.append(generateConstructors(token));
         }
 
         Set<MethodSignatureComparator> methods = new HashSet<>();
-        fillMethodSet(token, methods);
-        methods.forEach(m -> code.append(createExecutableCode(m.getMethod(), false)));
+        fillSet(token.getMethods(), methods);
+
+        while (token != null) {
+            fillSet(token.getDeclaredMethods(), methods);
+            token = token.getSuperclass();
+        }
+
+        for (MethodSignatureComparator m: methods) {
+            code.append(createExecutableCode(m.getMethod(), false));
+        }
         return code.toString();
     }
 
-    private String implementExecutables(Executable[] executables, boolean areConstructors) {
-        StringBuffer code = new StringBuffer();
-        Arrays.stream(executables)
-                .filter(e -> !Modifier.isPrivate(e.getModifiers()))
-                .forEach((e) -> {
-                    code.append(createExecutableCode(e, areConstructors).concat(NEWLINE));
-                });
-        return code.toString();
+
+    private void fillSet(Method[] executables, Set<MethodSignatureComparator> methods) {
+        methods.addAll(Arrays.stream(executables)
+                .filter(m -> !Modifier.isFinal(m.getModifiers()) && !Modifier.isPrivate(m.getModifiers()) && Modifier.isAbstract(m.getModifiers()))
+                .map(MethodSignatureComparator::new)
+                .collect(Collectors.toList()));
     }
 
     private String getClassDeclarationTop(Class<?> token) {
@@ -201,7 +239,8 @@ public class Implementor extends ClassLoader implements Impler {
     }
 
     private void validate(Class<?> token) throws ImplerException {
-        if (token.isPrimitive() || token.equals(void.class) || Modifier.isFinal(token.getModifiers()) || token.equals(Enum.class)) {
+        if (token.isPrimitive() || token.isArray() || token.equals(void.class) || Modifier.isFinal(token.getModifiers())
+                || token == Enum.class ){
             throw new ImplerException("Invalid class ".concat(token.getCanonicalName().concat(" was given.%n")));
         }
     }
@@ -223,8 +262,14 @@ public class Implementor extends ClassLoader implements Impler {
     public void implement(Class<?> token, Path root) throws ImplerException {
         validate(token);
 
-        root = getFilePathName(token, root);
-        createDirectories(root);
+        try {
+            root = getFilePathName(token, root, "java");
+            createDirectories(root);
+        } catch (InvalidPathException e) {
+            System.err.println(String.format("Can't create pat %s", root.toString()));
+            return;
+        }
+
 
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(root)) {
             StringBuilder classCode = new StringBuilder(getPackage(token));
@@ -232,26 +277,85 @@ public class Implementor extends ClassLoader implements Impler {
             classCode.append(implementExecutables(token));
             classCode.append(FOOTER);
             bufferedWriter.write(classCode.toString());
-            System.out.println(classCode.toString());
         } catch (IOException e) {
             throw new ImplerException("...");
         }
 
     }
 
-    public static void main(String[] args) {
-        if (args == null || args.length != 2 || args[0] == null || args[1] == null) {
-            System.err.println("Wrong arguments. Usage : Implementor <Class name> <Path>");
+    void compile(Class<?> token, Path tempPath) throws ImplerException {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        String[] args = new String[]{ "-cp", tempPath.toString() + File.pathSeparator + System.getProperty("java.class.path"), getFilePathName(token, tempPath, "java").toString() };
+        if (compiler == null || compiler.run(null, null, null, args) != 0) {
+            throw new ImplerException(String.format("Unable to compile %s.java", getClassName(token)));
+        }
+
+    }
+
+    void createJarFile(Class<?> token, Path tempDir, Path path) throws ImplerException {
+        Manifest manifest = new Manifest();
+        Attributes manifestAttributes = manifest.getMainAttributes();
+        manifestAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifestAttributes.put(Attributes.Name.IMPLEMENTATION_VENDOR, "Diana Kudaiberdieva");
+
+        try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(path), manifest)) {
+            jos.putNextEntry(new ZipEntry(token.getName().replace('.', '/') + SUFFIX + ".class".trim()));
+            Files.copy(getFilePathName(token, tempDir, "class"), jos);
+        } catch (IOException e) {
+            throw new ImplerException("Can't create JAR file", e);
+        }
+    }
+
+    @Override
+    public void implementJar(Class<?> token, Path path) throws ImplerException {
+        validate(token);
+        createDirectories(path);
+        Path tempDir;
+
+        try {
+            tempDir = Files.createTempDirectory(path.toAbsolutePath().getParent(), "temp");
+        } catch (IOException e) {
+            throw new ImplerException("Unable to create temp directory", e);
+        }
+
+        try {
+            implement(token, tempDir);
+
+            compile(token, tempDir);
+
+            createJarFile(token, tempDir, path);
+        } catch (NullPointerException e){
+            System.err.println("Can't create jar file");
             return;
         }
 
-        Impler implementor = new Implementor();
+    }
+
+    public static void main(String[] args) {
+        if (args == null || args.length < 2 || args.length > 3 || args[0] == null || args[1] == null) {
+            System.err.println("Wrong arguments");
+            return;
+        }
+
+        JarImpler implementor = new Implementor();
+
+        boolean jar = args.length > 2;
+
         try {
-            implementor.implement(Class.forName(args[0]), Paths.get(args[1]));
+            if (jar) {
+                implementor.implement(Class.forName(args[0]), Paths.get(args[1]));
+            } else {
+                if (args[2] == null) {
+                    System.err.println("Wrong arguments. Usage : Implementor <Path> <Implementor> <Class>");
+                    return;
+                }
+                implementor.implementJar(Class.forName(args[1]), Paths.get(args[2]));
+            }
         } catch (ClassNotFoundException e) {
             System.err.println(String.format("Class %s was not found%n", args[0]));
         } catch (ImplerException e) {
-            System.err.println(String.format("...%n", args[0]));
+            System.err.println(String.format("%S...%n", args[0]));
         }
     }
 }
+
