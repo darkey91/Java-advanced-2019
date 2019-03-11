@@ -25,28 +25,32 @@ import java.util.zip.ZipEntry;
 
 
 /**
- * Implementation class for {@link JarImpler} interface
+ *  Implementation class for <a href="hcodeps://www.kgeorgiy.info/git/geo/java-advanced-2019/src/master/modules/info.kgeorgiy.java.advanced.implementor/info/kgeorgiy/java/advanced/implementor/JarImpler.java"> {@link JarImpler}</a> interface
+ * for <a href="hcodeps://www.kgeorgiy.info/courses/java-advanced/">Java Advanced</a> course.
+ *
+ * @author Diana Kudaiberdieva
  */
 public class Implementor implements JarImpler {
+    /** Suffix for generated file name */
     private final static String SUFFIX = "Impl";
-    private final static String PACKAGE = "package";
-    private final static String SUPER = "super";
+    /** TAB for generated file name */
     private final static String TAB = "    ";
     private final static String DOUBLE_TAB = "        ";
     private final static String SPACE = " ";
     private final static String COMMA = ",";
     private final static String R_OPEN = "(";
     private final static String R_CLOSE = ")";
-    private final static String C_OPEN = "{";
-    private final static String C_CLOSE = "}";
+    private final static String CURLY_OPEN = "{";
+    private final static String CURLY_CLOSE = "}";
     private final static String END_STRING = ";";
     private final static int MOD = (int) 1e9 + 1999;
     private final static String NEWLINE = System.lineSeparator();
     private final static String DOUBLE_NEWLINE = NEWLINE.concat(NEWLINE);
     private final static String COMMA_SPACE = COMMA.concat(SPACE);
-    private final static String HEADER = C_OPEN.concat(NEWLINE);
-    private final static String FOOTER = C_CLOSE.concat(NEWLINE);
+    private final static String HEADER = CURLY_OPEN.concat(NEWLINE);
+    private final static String FOOTER = CURLY_CLOSE.concat(NEWLINE);
 
+    /**Default constructor*/
     public Implementor() {
     }
 
@@ -54,7 +58,7 @@ public class Implementor implements JarImpler {
         if (token.getPackage().getName().equals("")) {
             return "";
         }
-        StringBuffer code = new StringBuffer(PACKAGE.concat(SPACE));
+        StringBuffer code = new StringBuffer("package".concat(SPACE));
         code.append(token.getPackage().getName()).append(END_STRING).append(DOUBLE_NEWLINE);
         return code.toString();
     }
@@ -147,7 +151,7 @@ public class Implementor implements JarImpler {
                     .append(END_STRING);
         } else {
 
-            code.append(SUPER.concat(R_OPEN));
+            code.append("super".concat(R_OPEN));
             for (int i = 0; i < executable.getParameterCount(); i++) {
                 if (i == executable.getParameterCount() - 1) {
                     code.append(String.format("var%d", i));
@@ -246,12 +250,12 @@ public class Implementor implements JarImpler {
     }
 
     /**
-     * Produces code implementing class or interface specified by provided <tt>token</tt>.
+     * Produces code implementing class or interface specified by provided <code>token</code>.
      * <p>
-     * Generated class classes name should be same as classes name of the type token with <tt>Impl</tt> suffix
+     * Generated class classes name should be same as classes name of the type token with <code>Impl</code> suffix
      * added. Generated source code should be placed in the correct subdirectory of the specified
-     * <tt>root</tt> directory and have correct file name. For example, the implementation of the
-     * interface {@link java.util.List} should go to <tt>$root/java/util/ListImpl.java</tt>
+     * <code>root</code> directory and have correct file name. For example, the implementation of the
+     * interface {@link java.util.List} should go to <code>$root/java/util/ListImpl.java</code>
      *
      * @param token type token to create implementation for.
      * @param root  root directory.
@@ -320,11 +324,9 @@ public class Implementor implements JarImpler {
 
         try {
             implement(token, tempDir);
-
             compile(token, tempDir);
-
             createJarFile(token, tempDir, path);
-        } catch (NullPointerException e){
+        } catch (ImplerException e){
             System.err.println("Can't create jar file");
             return;
         }
