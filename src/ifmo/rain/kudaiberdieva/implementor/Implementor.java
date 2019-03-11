@@ -29,44 +29,93 @@ import java.util.zip.ZipEntry;
  * for <a href="hcodeps://www.kgeorgiy.info/courses/java-advanced/">Java Advanced</a> course.
  *
  * @author Diana Kudaiberdieva
+ * @version 1.0
  */
 public class Implementor implements JarImpler {
-    /** Suffix for generated file name */
+    /** Suffix for the name of the file to create*/
     private final static String SUFFIX = "Impl";
-    /** TAB for generated file name */
+
+    /** Symbol TAB for the file to create */
     private final static String TAB = "    ";
+
+    /** Double TAB for the file to create*/
     private final static String DOUBLE_TAB = "        ";
+
+    /** Space for the file to create */
     private final static String SPACE = " ";
+
+    /** Comma for the file to create */
     private final static String COMMA = ",";
-    private final static String R_OPEN = "(";
-    private final static String R_CLOSE = ")";
+
+    /** Opening parenthesis for the file to create*/
+    private final static String PARENTHESIS_OPEN = "(";
+
+    /** Closing parenthesis for the file to create */
+    private final static String PARENTHESIS_CLOSE = ")";
+
+    /** Opening curly parenthesis for the file to create*/
     private final static String CURLY_OPEN = "{";
+
+    /** Closing curly parenthesis for the file to create */
     private final static String CURLY_CLOSE = "}";
-    private final static String END_STRING = ";";
+
+    /** Semicolon for the file to create */
+    private final static String SEMICOLON = ";";
+
+    /**Base for modulo operation*/
     private final static int MOD = (int) 1e9 + 1999;
+
+    /**System line separator for the file to create*/
     private final static String NEWLINE = System.lineSeparator();
+
+    /**Double system line separator for the file to create*/
     private final static String DOUBLE_NEWLINE = NEWLINE.concat(NEWLINE);
+
+    /**Concatenation of comma and space for the file to create*/
     private final static String COMMA_SPACE = COMMA.concat(SPACE);
+
+    /**Concatenation of opening curly parenthesis and line separator for the file to create*/
     private final static String HEADER = CURLY_OPEN.concat(NEWLINE);
+
+    /**Concatenation of closing curly parenthesis and line separator for the file to create*/
     private final static String FOOTER = CURLY_CLOSE.concat(NEWLINE);
 
     /**Default constructor*/
-    public Implementor() {
-    }
+    public Implementor() {}
 
+
+    /**
+     *Gets the package of this class. If the class is in an unnamed package returns empty string.
+     * @param token represents class or interfaces which should be extended or implemented
+     * @return The name of package
+     */
     private String getPackage(Class<?> token) {
         if (token.getPackage().getName().equals("")) {
             return "";
         }
         StringBuffer code = new StringBuffer("package".concat(SPACE));
-        code.append(token.getPackage().getName()).append(END_STRING).append(DOUBLE_NEWLINE);
+        code.append(token.getPackage().getName()).append(SEMICOLON).append(DOUBLE_NEWLINE);
         return code.toString();
     }
 
+    /**
+     * Returns the name for file to create. It contains name of the entity from parameters (class, interface) represented by {@link Class} object and {@link #SUFFIX}.
+     *
+     * @param  token represents class or interfaces which should be extended or implemented
+     * @return The name of the file to create
+     */
     private String getClassName(Class<?> token) {
         return token.getSimpleName().concat(SUFFIX);
     }
 
+    /**
+     * Returns path  to file to be created with specified extension.
+     * The resulting string uses the default name-separator character to separate the names in the name sequence.
+     * @param token represents class or interfaces in a running Java application
+     * @param path path to parent directory for the file to be created
+     * @param extension - string with necessary
+     * @return The path represents path to the file to be created
+     */
     private Path getFilePathName(Class<?> token, Path path, String extension) {
         return path.resolve(token.getPackageName()
                 .replace('.', File.separatorChar))
@@ -74,6 +123,12 @@ public class Implementor implements JarImpler {
                         .concat("." + extension));
     }
 
+    /**
+     * Create parent directory for the file to be created.
+     *
+     * @param path the parent directory to create
+     * @throws ImplerException - If errors occur during creation
+     */
     private void createDirectories(Path path) throws ImplerException {
         if (path.getParent() != null) {
             try {
@@ -84,6 +139,11 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Returns {@link String} with parameters with their canonical type names joining with comma and surrounded by parenthesises.
+     * @param parameters are contained in result string
+     * @return The string represents parameter list in method
+     */
     private String getMethodParametersString(Class<?>[] parameters) {
         if (parameters.length == 0)
             return "() ";
@@ -98,6 +158,11 @@ public class Implementor implements JarImpler {
         return code.toString();
     }
 
+    /**
+     * Returns the string representation of default value for given {@link Class}.
+     * @param token - {@link Class} to get default value
+     * @return The string of default value.
+     */
     private String getDefaultValueString(Class<?> token) {
         if (token.equals(Boolean.TYPE)) {
             return " false";
@@ -108,6 +173,11 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Returns {@link String} that starts from "throws" and then enumerates exceptions could be thrown by executable from parameter.
+     * @param executable to get possible exceptions
+     * @return The string with exceptions for method code
+     */
     private String getExceptionString(Executable executable) {
         StringBuffer code = new StringBuffer();
 
@@ -125,6 +195,12 @@ public class Implementor implements JarImpler {
 
     }
 
+    /**
+     * Returns {@link String} that represent implementation code of method or constructor.
+     * @param executable - to be implemented
+     * @param isConstructor - to determine whether a constructor
+     * @return The string with written code for method
+     */
     private String createExecutableCode(Executable executable, boolean isConstructor) {
         int modifiers = executable.getModifiers() & ~Modifier.TRANSIENT & ~Modifier.ABSTRACT & ~Modifier.NATIVE ;
 
@@ -148,10 +224,10 @@ public class Implementor implements JarImpler {
 
         if (!isConstructor) {
             code.append("return ".concat(getDefaultValueString(returnType)))
-                    .append(END_STRING);
+                    .append(SEMICOLON);
         } else {
 
-            code.append("super".concat(R_OPEN));
+            code.append("super".concat(PARENTHESIS_OPEN));
             for (int i = 0; i < executable.getParameterCount(); i++) {
                 if (i == executable.getParameterCount() - 1) {
                     code.append(String.format("var%d", i));
@@ -159,23 +235,45 @@ public class Implementor implements JarImpler {
                     code.append(String.format("var%d, ", i));
                 }
             }
-            code.append(R_CLOSE).append(END_STRING);
+            code.append(PARENTHESIS_CLOSE).append(SEMICOLON);
         }
 
         code.append(NEWLINE.concat(TAB).concat(FOOTER)).append(NEWLINE);
         return code.toString();
     }
 
+    /**
+     * Nested class which helps to distinguish methods in connected classes or interfaces.
+     * Methods with same signature can not appear in the code of the class being implemented, so {@link MethodSignatureComparator} is able to compare for equality them.
+     */
+
     private class MethodSignatureComparator {
+        /**
+         * Method represented by {@link MethodSignatureComparator}
+         */
         private Method method;
+
+        /**
+         * Creates instance of {@link MethodSignatureComparator}
+         * @param method to be wrapped by {@link MethodSignatureComparator}
+         */
         public MethodSignatureComparator(Method method) {
             this.method = method;
         }
 
+        /**
+         * Returns the represented method
+         * @return method
+         */
         public Method getMethod() {
             return method;
         }
 
+        /**
+         * Compares for equality two instances of {@link MethodSignatureComparator}
+         * @param other to compare with this
+         * @return True - if equal. False - If not equals or other is null, or other is not instance of {@link MethodSignatureComparator}
+         */
         @Override
         public boolean equals(Object other) {
             if (other == null) return false;
@@ -185,6 +283,11 @@ public class Implementor implements JarImpler {
             return false;
         }
 
+        /**
+         * Calculate hash code for method. Hash code depends on method signature.
+         * @return hash code of methdd
+         */
+
         @Override
         public int hashCode() {
             return ((Arrays.hashCode(method.getParameterTypes()) * method.getParameterCount()) % MOD
@@ -192,6 +295,12 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Returns string that contain code of implementation of constructors for class to be created.
+     * @param token {@link Class} to be extended or implemented
+     * @return The code for constructors
+     * @throws ImplerException - If token is not interface and does't contain any constructor
+     */
     private String generateConstructors(Class<?> token) throws ImplerException {
         StringBuffer code = new StringBuffer();
         Constructor[] constructors = Arrays.stream(token.getDeclaredConstructors())
@@ -206,6 +315,13 @@ public class Implementor implements JarImpler {
         }
         return code.toString();
     }
+
+    /**
+     * Returns string that contain code of implementation of methods and constructors for class to be created.
+     * @param token {@link Class} to be extended or implemented
+     * @return The code for constructors and methods
+     * @throws ImplerException - If token is not interface and does't contain any constructor
+     */
 
     private String implementExecutables(Class<?> token) throws ImplerException  {
         StringBuffer code = new StringBuffer();
@@ -228,6 +344,11 @@ public class Implementor implements JarImpler {
         return code.toString();
     }
 
+    /**
+     * Fills set with uniques methods. Set is maintained by {@link MethodSignatureComparator}.
+     * @param executables array of methods for filling
+     * @param methods set to be filled
+     */
 
     private void fillSet(Method[] executables, Set<MethodSignatureComparator> methods) {
         methods.addAll(Arrays.stream(executables)
@@ -236,12 +357,23 @@ public class Implementor implements JarImpler {
                 .collect(Collectors.toList()));
     }
 
+    /**
+     * Returns {@link String} that represents signature of class declaration code.
+     * @param token to create name for class based on name of token
+     * @return The string with class declaration
+     */
+
     private String getClassDeclarationTop(Class<?> token) {
         return "public class ".concat(getClassName(token))
                 .concat(token.isInterface() ? " implements " : " extends ")
                 .concat(token.getSimpleName()).concat(SPACE).concat(HEADER);
     }
 
+    /**
+     * Checks if given {@link Class} can be implemented or extended
+     * @param token to be implemented or extended
+     * @throws ImplerException - if {@link Class} can not be implemented or extended
+     */
     private void validate(Class<?> token) throws ImplerException {
         if (token.isPrimitive() || token.isArray() || token.equals(void.class) || Modifier.isFinal(token.getModifiers())
                 || token == Enum.class ){
@@ -259,8 +391,7 @@ public class Implementor implements JarImpler {
      *
      * @param token type token to create implementation for.
      * @param root  root directory.
-     * @throws info.kgeorgiy.java.advanced.implementor.ImplerException when implementation cannot be
-     *                                                                 generated.
+     * @throws ImplerException when implementation cannot be generated.
      */
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
@@ -287,7 +418,14 @@ public class Implementor implements JarImpler {
 
     }
 
-    void compile(Class<?> token, Path tempPath) throws ImplerException {
+
+    /**
+     * Compile created class to temporary directory. Temporary directory is situated in the same folder with specified path.
+     * @param token to get name for class to be compiled
+     * @param tempPath where pu compiled classes
+     * @throws ImplerException - If unable to compile class
+     */
+    private void compile(Class<?> token, Path tempPath) throws ImplerException {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         String[] args = new String[]{ "-cp", tempPath.toString() + File.pathSeparator + System.getProperty("java.class.path"), getFilePathName(token, tempPath, "java").toString() };
         if (compiler == null || compiler.run(null, null, null, args) != 0) {
@@ -296,7 +434,7 @@ public class Implementor implements JarImpler {
 
     }
 
-    void createJarFile(Class<?> token, Path tempDir, Path path) throws ImplerException {
+    private void createJarFile(Class<?> token, Path tempDir, Path path) throws ImplerException {
         Manifest manifest = new Manifest();
         Attributes manifestAttributes = manifest.getMainAttributes();
         manifestAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -341,10 +479,8 @@ public class Implementor implements JarImpler {
 
         JarImpler implementor = new Implementor();
 
-        boolean jar = args.length > 2;
-
         try {
-            if (jar) {
+            if (args.length == 2) {
                 implementor.implement(Class.forName(args[0]), Paths.get(args[1]));
             } else {
                 if (args[2] == null) {
