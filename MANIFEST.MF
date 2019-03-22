@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Created-By: di
 Main-Class: ifmo.rain.kudaiberdieva.implementor.Implementor
-Class-Path: artifacts/info.kgeorgiy.java.advanced.implementor.jar bin/
+Class-Path: artifacts/info.kgeorgiy.java.advanced.implementor.jar

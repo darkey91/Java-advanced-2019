@@ -4,5 +4,8 @@ java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.student StudentQu
 javac -cp artifacts/info.kgeorgiy.java.advanced.implementor.jar -d bin src/ifmo/rain/kudaiberdieva/implementor/Implementor.java
 java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.implementor class ifmo.rain.kudaiberdieva.implementor.Implementor
 
+javac -cp artifacts/info.kgeorgiy.java.advanced.implementor.jar -d bin src/ifmo/rain/kudaiberdieva/implementor/Implementor.java
 java -cp bin:artifacts/* -p "artifacts:lib" -m info.kgeorgiy.java.advanced.implementor jar-class ifmo.rain.kudaiberdieva.implementor.Implementor
+
+
 

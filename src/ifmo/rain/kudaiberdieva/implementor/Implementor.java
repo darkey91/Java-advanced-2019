@@ -83,7 +83,6 @@ public class Implementor implements JarImpler {
     /**Default constructor*/
     public Implementor() {}
 
-
     /**
      *Gets the package of this class. If the class is in an unnamed package returns empty string.
      * @param token represents class or interfaces which should be extended or implemented
@@ -405,7 +404,6 @@ public class Implementor implements JarImpler {
             return;
         }
 
-
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(root)) {
             StringBuilder classCode = new StringBuilder(getPackage(token));
             classCode.append(getClassDeclarationTop(token));
@@ -415,9 +413,7 @@ public class Implementor implements JarImpler {
         } catch (IOException e) {
             throw new ImplerException("...");
         }
-
     }
-
 
     /**
      * Compile created class to temporary directory. Temporary directory is situated in the same folder with specified path.
@@ -427,12 +423,21 @@ public class Implementor implements JarImpler {
      */
     private void compile(Class<?> token, Path tempPath) throws ImplerException {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        String[] args = new String[]{ "-cp", tempPath.toString() + File.pathSeparator + System.getProperty("java.class.path"), getFilePathName(token, tempPath, "java").toString() };
+        String[] args = new String[]{ "-cp", tempPath.toString() + File.pathSeparator + System.getProperty("java.class.path"),
+                getFilePathName(token, tempPath, "java").toString() };
         if (compiler == null || compiler.run(null, null, null, args) != 0) {
             throw new ImplerException(String.format("Unable to compile %s.java", getClassName(token)));
         }
 
     }
+
+    /**
+     * Creates jar file with compiled class.
+     * @param token class to compile
+     * @param tempDir where to compile
+     * @param path temporaryr directory is situated
+     * @throws ImplerException can't create jar file
+     */
 
     private void createJarFile(Class<?> token, Path tempDir, Path path) throws ImplerException {
         Manifest manifest = new Manifest();
@@ -447,15 +452,25 @@ public class Implementor implements JarImpler {
             throw new ImplerException("Can't create JAR file", e);
         }
     }
+    /**
+     * Produces <code>.jar</code> file implementing class or interface specified by provided <code>token</code>.
+     * <p>
+     * Generated class classes name should be same as classes name of the type token with <code>Impl</code> suffix
+     * added.
+     *
+     * @param token type token to create implementation for.
+     * @param jarFile target <code>.jar</code> file.
+     * @throws ImplerException when implementation cannot be generated.
+     */
 
     @Override
-    public void implementJar(Class<?> token, Path path) throws ImplerException {
+    public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
         validate(token);
-        createDirectories(path);
+        createDirectories(jarFile);
         Path tempDir;
 
         try {
-            tempDir = Files.createTempDirectory(path.toAbsolutePath().getParent(), "temp");
+            tempDir = Files.createTempDirectory(jarFile.toAbsolutePath().getParent(), "temp");
         } catch (IOException e) {
             throw new ImplerException("Unable to create temp directory", e);
         }
@@ -463,10 +478,9 @@ public class Implementor implements JarImpler {
         try {
             implement(token, tempDir);
             compile(token, tempDir);
-            createJarFile(token, tempDir, path);
+            createJarFile(token, tempDir, jarFile);
         } catch (ImplerException e){
             System.err.println("Can't create jar file");
-            return;
         }
 
     }
@@ -484,7 +498,7 @@ public class Implementor implements JarImpler {
                 implementor.implement(Class.forName(args[0]), Paths.get(args[1]));
             } else {
                 if (args[2] == null) {
-                    System.err.println("Wrong arguments. Usage : Implementor <Path> <Implementor> <Class>");
+                    System.err.println("Wrong arguments. Usage : Implementor <Implementor> <Class> <Path>");
                     return;
                 }
                 implementor.implementJar(Class.forName(args[1]), Paths.get(args[2]));

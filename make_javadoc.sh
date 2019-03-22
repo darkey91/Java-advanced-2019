@@ -8,3 +8,4 @@ rm -r javadoc/
 mkdir javadoc
 javac -cp artifacts/info.kgeorgiy.java.advanced.implementor.jar -d bin src/ifmo/rain/kudaiberdieva/implementor/Implementor.java
 javadoc -private -author -version -sourcepath $SOURCEPATH -classpath $CLASSPATH -link $LINK -d javadoc $PACKAGE
+
