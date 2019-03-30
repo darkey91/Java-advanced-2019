@@ -1,8 +1,7 @@
 package ifmo.rain.kudaiberdieva.student;
 
-import info.kgeorgiy.java.advanced.student.Group;
+
 import info.kgeorgiy.java.advanced.student.Student;
-import info.kgeorgiy.java.advanced.student.StudentGroupQuery;
 import info.kgeorgiy.java.advanced.student.StudentQuery;
 
 import java.util.*;

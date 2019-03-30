@@ -1,6 +1,7 @@
 package ifmo.rain.kudaiberdieva.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.ListIP;
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.Function;
@@ -14,6 +15,16 @@ import java.util.stream.Stream;
  * @author darkey
  */
 public class IterativeParallelism implements ListIP {
+    private ParallelMapper parallelMapper;
+
+    public IterativeParallelism() {
+        parallelMapper = null;
+    }
+
+    public IterativeParallelism(ParallelMapper parallelMapper) {
+        this.parallelMapper = parallelMapper;
+    }
+
     /**
      * Join values to string.
      *
@@ -29,7 +40,7 @@ public class IterativeParallelism implements ListIP {
         //return common(threads, values, stream -> stream.toString(), stringStream -> stringStream.collect(Collectors.joining()));
 
         return common(threads, values,
-                stream -> stream.map(Object::toString).collect(Collectors.joining()),
+                l -> l.stream().map(Object::toString).collect(Collectors.joining()),
                 stringStream -> stringStream.collect(Collectors.joining()));
     }
 
@@ -47,7 +58,7 @@ public class IterativeParallelism implements ListIP {
     @Override
     public <T> List<T> filter(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
         return common(threads, values,
-                stream -> stream.filter(predicate).collect(Collectors.toList()),
+                l -> l.stream().filter(predicate).collect(Collectors.toList()),
                 valuesStream -> valuesStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
 
@@ -66,7 +77,7 @@ public class IterativeParallelism implements ListIP {
     @Override
     public <T, U> List<U> map(int threads, List<? extends T> values, Function<? super T, ? extends U> function) throws InterruptedException {
         return common(threads, values,
-                stream -> stream.map(function).collect(Collectors.toList()),
+                l -> l.stream().map(function).collect(Collectors.toList()),
                 valuesStream -> valuesStream.flatMap(Collection::stream).collect(Collectors.toList()));
     }
 
@@ -81,35 +92,43 @@ public class IterativeParallelism implements ListIP {
         }
     }
 
-    private <T, E> E common(int threads, List<? extends T> values, Function<Stream<? extends T>, E> threadFunction, Function<Stream<E>, E> resultingFunction) throws InterruptedException {
+    private <T, E> E common(int threads, List<? extends T> values,
+                            Function<List<? extends T>, E> threadFunction,
+                            Function<Stream<E>, E> resultingFunction) throws InterruptedException {
         threads = Math.min(values.size(), threads);
         int size = values.size() / threads;
         int left = values.size() % threads;
 
-        final List<Stream<? extends T>> subLists = new ArrayList<>();
-
-        final List<Thread> threadList = new ArrayList<>(Collections.nCopies(threads, null));
-
-        //T , i.e . Optional.get() returns T
-        List<E> resultOfThreads = new ArrayList<>(Collections.nCopies(threads, null));
+        List<List<? extends T>> subLists = new ArrayList<>();
 
         for (int i = 0; i < values.size(); ) {
-            boolean b = subLists.addAll(Collections.singletonList(values.subList(i, i + size + (left > 0 ? 1 : 0)).stream()));
+            int r = i + size + (left > 0 ? 1 : 0);
+            boolean b = subLists.addAll(Collections.singletonList(values.subList(i, r)));
             //if (!b) troubles;
-            i = i + size + (left > 0 ? 1 : 0);
+            i = r;
             --left;
         }
-        for (int i = 0; i < threads; i++) {
-            final int position = i;
-            threadList.set(position, new Thread(() -> {
-                resultOfThreads.set(position, threadFunction.apply(subLists.get(position)));
-            }));
-            threadList.get(i).start();
+
+        if (parallelMapper == null) {
+            final List<Thread> threadList = new ArrayList<>(Collections.nCopies(threads, null));
+
+            //T , i.e . Optional.get() returns T
+            List<E> resultOfThreads = new ArrayList<>(Collections.nCopies(threads, null));
+
+            for (int i = 0; i < threads; i++) {
+                final int position = i;
+                threadList.set(position, new Thread(() -> {
+                    resultOfThreads.set(position, threadFunction.apply(subLists.get(position)));
+                }));
+                threadList.get(i).start();
+            }
+
+            joinThreads(threadList);
+
+            return resultingFunction.apply(resultOfThreads.stream());
+        } else {
+             return resultingFunction.apply(parallelMapper.map(threadFunction, subLists).stream());
         }
-
-        joinThreads(threadList);
-
-        return resultingFunction.apply(resultOfThreads.stream());
     }
 
     /**
@@ -129,7 +148,7 @@ public class IterativeParallelism implements ListIP {
     public <T> T maximum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException, NoSuchElementException {
         if (values.isEmpty())
             throw new NoSuchElementException("Can't find maximum element in empty list");
-        return common(threads, values, stream -> stream.max(comparator).get(), stream -> stream.max(comparator).get());
+        return common(threads, values, l -> l.stream().max(comparator).get(), stream -> stream.max(comparator).get());
     }
 
 
@@ -148,9 +167,8 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T> T minimum(int threads, List<? extends T> values, Comparator<? super T> comparator) throws InterruptedException, NoSuchElementException {
-        if (values.isEmpty())
-            throw new NoSuchElementException("Can't find minimum element in empty list");
-        return common(threads, values, stream -> stream.min(comparator).get(), stream -> stream.min(comparator).get());
+        return maximum(threads, values, comparator.reversed());
+        //  return common(threads, values, stream -> stream.min(comparator).get(), stream -> stream.min(comparator).get());
     }
     /**
      * Returns whether all values satisfies predicate.
@@ -166,7 +184,7 @@ public class IterativeParallelism implements ListIP {
      */
     @Override
     public <T> boolean all(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-       return common(threads, values, stream -> stream.allMatch(predicate), stream -> stream.allMatch(p -> p));
+       return common(threads, values, l -> l.stream().allMatch(predicate), stream -> stream.allMatch(p -> p));
     }
 
     /**
