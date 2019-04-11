@@ -102,11 +102,9 @@ public class IterativeParallelism implements ListIP {
         List<List<? extends T>> subLists = new ArrayList<>();
 
         for (int i = 0; i < values.size(); ) {
-            int r = i + size + (left > 0 ? 1 : 0);
-            boolean b = subLists.addAll(Collections.singletonList(values.subList(i, r)));
-            //if (!b) troubles;
-            i = r;
-            --left;
+            int sizeSub = size + (left-- > 0 ? 1 : 0);
+            subLists.addAll(Collections.singletonList(values.subList(i, i + sizeSub)));
+            i = i + sizeSub;
         }
 
         if (parallelMapper == null) {

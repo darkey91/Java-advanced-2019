@@ -104,6 +104,9 @@ public class Implementor implements JarImpler {
      * @return The name of the file to create
      */
     private String getClassName(Class<?> token) {
+        String className = token.getSimpleName();
+
+
         return token.getSimpleName().concat(SUFFIX);
     }
 
@@ -381,6 +384,24 @@ public class Implementor implements JarImpler {
     }
 
     /**
+     * Converts each symbol to unicode. If symbol code is greater or equal 128 =&#62; represents it as &#47;ux, where x is code of symbol in hexadecimal representation.
+     * @param code to convert to unicode
+     * @return class implementation in unicode representation
+     */
+
+    private String getUnicodeString(String code) {
+     StringBuilder correctCode = new StringBuilder();
+        for (char c : code.toCharArray()) {
+            if (c >= 128) {
+                correctCode.append(String.format("\\u%04X", (int) c));
+            } else {
+                correctCode.append(c);
+            }
+        }
+        return correctCode.toString();
+    }
+
+    /**
      * Produces code implementing class or interface specified by provided <code>token</code>.
      * <p>
      * Generated class classes name should be same as classes name of the type token with <code>Impl</code> suffix
@@ -409,7 +430,8 @@ public class Implementor implements JarImpler {
             classCode.append(getClassDeclarationTop(token));
             classCode.append(implementExecutables(token));
             classCode.append(FOOTER);
-            bufferedWriter.write(classCode.toString());
+            System.out.println(getUnicodeString(classCode.toString()));
+            bufferedWriter.write(getUnicodeString(classCode.toString()));
         } catch (IOException e) {
             throw new ImplerException("...");
         }
@@ -465,9 +487,7 @@ public class Implementor implements JarImpler {
 
     @Override
     public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
-        validate(token);
-        createDirectories(jarFile);
-        Path tempDir;
+       Path tempDir;
 
         try {
             tempDir = Files.createTempDirectory(jarFile.toAbsolutePath().getParent(), "temp");
