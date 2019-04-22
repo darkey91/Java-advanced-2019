@@ -9,3 +9,4 @@ java -cp bin:artifacts/* -p "artifacts:lib" -m info.kgeorgiy.java.advanced.imple
 
 javac -cp "artifacts/info.kgeorgiy.java.advanced.mapper.jar:artifacts/info.kgeorgiy.java.advanced.concurrent.jar" -d bin src/ifmo/rain/kudaiberdieva/mapper/ParallelMapperImpl.java src/ifmo/rain/kudaiberdieva/concurrent/IterativeParallelism.java
 java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.mapper list ifmo.rain.kudaiberdieva.mapper.ParallelMapperImpl,ifmo.rain.kudaiberdieva.concurrent.IterativeParallelism
+
