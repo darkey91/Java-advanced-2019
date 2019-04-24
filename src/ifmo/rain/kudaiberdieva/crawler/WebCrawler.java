@@ -21,8 +21,6 @@ public class WebCrawler implements Crawler {
     private static final int DEFAULT_EXTRACTORS = 4;
     private static final int DEFAULT_PERHOST = 10;
 
-
-
     public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
         this.downloaders = Executors.newFixedThreadPool(downloaders);
         this.extractors  = Executors.newFixedThreadPool(extractors);
@@ -85,15 +83,19 @@ public class WebCrawler implements Crawler {
     }
 
     private static int get_value(String[] args, int index, int default_value) {
-        if (args.length > index) {
-            return Integer.parseInt(args[index]);
+        try {
+            if (args.length > index && args[index] != null) {
+                return Integer.parseInt(args[index]);
+            }
+        } catch (NumberFormatException e) {
+            return default_value;
         }
         return default_value;
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length < 1) {
-            System.err.println("Wrong aruments. Usage : WebCrawler url [depth [downloads [extractors [perHost]]]]");
+        if (args.length < 1 || args[0] == null) {
+            System.err.println("Wrong arguments. Usage : WebCrawler url [depth [downloads [extractors [perHost]]]]");
         }
 
         String url = args[0];
