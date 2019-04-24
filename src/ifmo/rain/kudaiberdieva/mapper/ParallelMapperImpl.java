@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.function.Function;
 
 public class ParallelMapperImpl implements ParallelMapper {
-    private int threads_amount;
     private Thread[] workers;
     private final Queue<Runnable> queue;
 
@@ -25,7 +24,7 @@ public class ParallelMapperImpl implements ParallelMapper {
      * @param threads amount of threads
      */
     public ParallelMapperImpl(int threads) {
-        threads_amount = Math.max(threads, 1);
+        int threads_amount = Math.max(threads, 1);
         queue = new LinkedList<>();
         workers = new Thread[threads_amount];
 
@@ -60,6 +59,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     @Override
     public <T, R> List<R> map(Function<? super T, ? extends R> function, List<? extends T> list) throws InterruptedException {
         List<R> result = new ArrayList<>(list.size());
+
         final Counter counter = new Counter();
 
         for (int i = 0; i < list.size(); ++i) {
@@ -104,7 +104,7 @@ public class ParallelMapperImpl implements ParallelMapper {
             try {
                 thread.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
     }

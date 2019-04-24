@@ -1,9 +1,6 @@
 package ifmo.rain.kudaiberdieva.crawler;
 
-import info.kgeorgiy.java.advanced.crawler.Crawler;
-import info.kgeorgiy.java.advanced.crawler.Document;
-import info.kgeorgiy.java.advanced.crawler.Downloader;
-import info.kgeorgiy.java.advanced.crawler.Result;
+import info.kgeorgiy.java.advanced.crawler.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,6 +15,13 @@ public class WebCrawler implements Crawler {
     private final ExecutorService downloaders;
     private final ExecutorService extractors;
     private final Downloader downloader;
+
+    private static final int DEFAULT_DEPTH = 5;
+    private static final int DEFAULT_DOWNLOADERS = 2;
+    private static final int DEFAULT_EXTRACTORS = 4;
+    private static final int DEFAULT_PERHOST = 10;
+
+
 
     public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
         this.downloaders = Executors.newFixedThreadPool(downloaders);
@@ -80,10 +84,43 @@ public class WebCrawler implements Crawler {
         }
     }
 
+    private static int get_value(String[] args, int index, int default_value) {
+        if (args.length > index) {
+            return Integer.parseInt(args[index]);
+        }
+        return default_value;
+    }
+
+    public static void main(String[] args) throws IOException {
+        if (args.length < 1) {
+            System.err.println("Wrong aruments. Usage : WebCrawler url [depth [downloads [extractors [perHost]]]]");
+        }
+
+        String url = args[0];
+        Downloader downloader = new CachingDownloader();
+
+        int depth = get_value(args, 1, DEFAULT_DEPTH);
+        int downloaders = get_value(args, 2, DEFAULT_DOWNLOADERS);
+        int extractors = get_value(args, 3, DEFAULT_EXTRACTORS);
+        int perhost = get_value(args, 4, DEFAULT_PERHOST);
+
+        WebCrawler crawler = new WebCrawler(downloader, downloaders, extractors, perhost);
+        Result  result = crawler.download(url, depth);
+
+        System.out.println("Successfully downloaded " + result.getDownloaded().size() + " pages: ");
+
+        result.getDownloaded().forEach(System.out::println);
+        System.out.println("Not downloaded due to error: " + result.getErrors().size());
+        result.getErrors().forEach((s, e) -> {
+            System.out.println("URL: " + s);
+            System.out.println("Error: " + e.getMessage());
+        });
+    }
+
     @Override
     public void close() {
-        downloaders.shutdown();
-        extractors.shutdown();
+        downloaders.shutdownNow();
+        extractors.shutdownNow();
     }
 
 
