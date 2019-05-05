@@ -13,4 +13,9 @@ java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.mapper list ifmo.
 javac -cp artifacts/info.kgeorgiy.java.advanced.crawler.jar -d bin src/ifmo/rain/kudaiberdieva/crawler/WebCrawler.java
 java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.crawler easy ifmo.rain.kudaiberdieva.crawler.WebCrawler
 
+javac -cp artifacts/info.kgeorgiy.java.advanced.hello.jar -d bin src/ifmo/rain/kudaiberdieva/hello/HelloUDPClient.java
+java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.hello client ifmo.rain.kudaiberdieva.hello.HelloUDPClient
+
+javac -cp artifacts/info.kgeorgiy.java.advanced.hello.jar -d bin src/ifmo/rain/kudaiberdieva/hello/HelloUDPServer.java
+java -cp bin -p "artifacts:lib" -m info.kgeorgiy.java.advanced.hello server ifmo.rain.kudaiberdieva.hello.HelloUDPServer
 
