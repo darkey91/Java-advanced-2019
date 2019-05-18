@@ -271,22 +271,18 @@
                             <tt>URLUtils</tt> из тестов.
                         </li></ul></li><li>
                     Класс <tt>WebCrawler</tt> должен реализовывать интерфейс <tt>Crawler</tt>
-		<pre>  
-		public interface Crawler extends AutoCloseable {
+		<pre> public interface Crawler extends AutoCloseable {
 			List&lt;String&gt; download(String url, int depth) throws IOException;
 			void close();
-       		}
-                    </pre>
+       		}  </pre>
 			<ul><li>
                             Метод <tt>download</tt> должен рекурсивно обходить страницы,
                             начиная с указанного URL на указанную глубину и
                             возвращать список загруженных страниц и файлов.
-
                             Например, если глубина равна 1, то должна быть
                             загружена только указанная страница. Если глубина равна
                             2, то указанная страница и те страницы и файлы, на которые
                             она ссылается и так далее.
-
                             Этот метод может вызываться параллельно в нескольких потоках.
                         </li><li>
                             Загрузка и обработка страниц (извлечение ссылок)
