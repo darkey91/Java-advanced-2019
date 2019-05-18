@@ -270,14 +270,14 @@
                             метод <tt>getHost</tt> класса
                             <tt>URLUtils</tt> из тестов.
                         </li></ul></li><li>
-                    Класс <tt>WebCrawler</tt> должен реализовывать интерфейс
-                    <tt>Crawler</tt><pre>                        public interface Crawler extends AutoCloseable {
-                            List&lt;String&gt; download(String url, int depth) throws IOException;
-
-                            void close();
-                        }
-
-                    </pre><ul><li>
+                    Класс <tt>WebCrawler</tt> должен реализовывать интерфейс <tt>Crawler</tt>
+		<pre>  
+		public interface Crawler extends AutoCloseable {
+			List&lt;String&gt; download(String url, int depth) throws IOException;
+			void close();
+       		}
+                    </pre>
+			<ul><li>
                             Метод <tt>download</tt> должен рекурсивно обходить страницы,
                             начиная с указанного URL на указанную глубину и
                             возвращать список загруженных страниц и файлов.
@@ -438,7 +438,8 @@
                     Пример отчета:
                     <div style="background-color: #ddd"><h3 id="N66344">Анализируемый файл: input.txt</h3><h4 id="N66346">Сводная статистика</h4><p>Число предложений: 38</p><p>Число строк: 41</p><p>…</p><h4 id="N66354">Статистика по словам</h4><p>Число слов: 153 (95 уникальных)</p><p>Минимальное слово: HTML</p><p>Максимальное слово: языках</p><p>Минимальная длина слова: 1 (и)</p><p>Максимальная длина слова: 14 (Поддерживаемые) </p><p>Средняя длина слова: 10</p><h4 id="N66368">Статистика по …</h4></div></li></ol></li><li>
             При выполнении задания следует обратить внимание на:
-            <ol><li>Декомпозицию сообщений для локализации</li><li>Согласование предложений</li></ol></li></ol></td> 	    
+            <ol><li>Декомпозицию сообщений для локализации</li><li>Согласование предложений</li></ol></li></ol></td> 	
+
 # Тесты к курсу «Технологии Java»
 
 [Условия домашних заданий](http://www.kgeorgiy.info/courses/java-advanced/homeworks.html)
